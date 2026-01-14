@@ -1,0 +1,35 @@
+
+[2026-01-14 10:03:57] Pembayaran sukses untuk TRX-260114-7745. Memulai proses Mikrotik...
+[2026-01-14 10:04:13] GAGAL KONEK MIKROTIK untuk TRX TRX-260114-7745. IP: ttn.rictech.my.id
+[2026-01-14 10:05:36] Pembayaran sukses untuk TRX-260114-7745. Memulai proses Mikrotik...
+[2026-01-14 10:05:52] GAGAL KONEK MIKROTIK untuk TRX TRX-260114-7745. IP: ttn.rictech.my.id
+[2026-01-14 10:08:48] Order ID tidak ditemukan: payment_notif_test_G751534867_81be1f10-898a-4682-9a09-9c37516d11ca
+[2026-01-14 10:10:09] Order ID tidak ditemukan: payment_notif_test_G751534867_b5b459c3-7398-4993-9cb3-3128a11d897c
+[2026-01-14 10:13:39] Pembayaran TRX-260114-7745 LUNAS. Database diupdate PAID. Mencoba Mikrotik...
+[2026-01-14 10:13:54] GAGAL KONEK MIKROTIK (ttn.rictech.my.id). Status tetap PAID, Voucher Kosong.
+[2026-01-14 10:14:36] Akses tanpa data JSON.
+[2026-01-14 10:26:17] [149.129.234.6] Pembayaran TRX-260114-8683 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:26:17] [149.129.234.6] Target Koneksi -> Host: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:26:32] [149.129.234.6] GAGAL KONEK: Tidak bisa menghubungi ttn.rictech.my.id pada port 1043.
+[2026-01-14 10:26:32] [149.129.234.6] Saran: Pastikan Port 1043 terbuka di Firewall Mikrotik & Hosting.
+[2026-01-14 10:27:59] [149.129.234.6] Pembayaran TRX-260114-8683 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:27:59] [149.129.234.6] Target Koneksi -> Host: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:28:14] [149.129.234.6] GAGAL KONEK: Tidak bisa menghubungi ttn.rictech.my.id pada port 1043.
+[2026-01-14 10:28:14] [149.129.234.6] Saran: Pastikan Port 1043 terbuka di Firewall Mikrotik & Hosting.
+[2026-01-14 10:34:25] [8.215.79.106] Pembayaran TRX-260114-8683 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:34:25] [8.215.79.106] Target Koneksi -> Host: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:34:40] [8.215.79.106] GAGAL KONEK: Tidak bisa menghubungi ttn.rictech.my.id pada port 1043.
+[2026-01-14 10:34:40] [8.215.79.106] Saran: Pastikan Port 1043 terbuka di Firewall Mikrotik & Hosting.
+[2026-01-14 10:35:22] [8.215.27.65] Pembayaran TRX-260114-7745 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:35:22] [8.215.27.65] Target Koneksi -> Host: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:35:37] [8.215.27.65] GAGAL KONEK: Tidak bisa menghubungi ttn.rictech.my.id pada port 1043.
+[2026-01-14 10:35:37] [8.215.27.65] Saran: Pastikan Port 1043 terbuka di Firewall Mikrotik & Hosting.
+[2026-01-14 10:38:58] [149.129.253.222] Pembayaran TRX-260114-5010 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:38:58] [149.129.253.222] Target: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:38:59] [149.129.253.222] SUKSES: Voucher wxse39 berhasil dibuat di Router.
+[2026-01-14 10:43:13] [149.129.253.222] Pembayaran TRX-260114-8683 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:43:13] [149.129.253.222] Target: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:43:13] [149.129.253.222] SUKSES: Voucher 5313002327 berhasil dibuat.
+[2026-01-14 10:43:41] [8.215.56.174] Pembayaran TRX-260114-2689 LUNAS. Memulai proses Mikrotik...
+[2026-01-14 10:43:41] [8.215.56.174] Target: ttn.rictech.my.id | Port: 1043
+[2026-01-14 10:43:41] [8.215.56.174] SUKSES: Voucher 6168464530 berhasil dibuat.
