@@ -53,4 +53,21 @@ try {
     ]);
     exit;
 }
+// 3. FUNGSI HELPER JSON RESPONSE
+// -------------------------------------------------
+// Fungsi ini wajib ada karena dipanggil oleh login.php, register.php, dll
+if (!function_exists('sendResponse')) {
+    function sendResponse($status, $message, $data = []) {
+        // Bersihkan buffer output agar tidak ada HTML liar yang ikut
+        // ob_clean(); // Opsional: aktifkan jika sering ada error output tak terduga
+        
+        header("Content-Type: application/json; charset=UTF-8");
+        echo json_encode([
+            "status"  => $status,
+            "message" => $message,
+            "data"    => $data
+        ]);
+        exit; // Menghentikan eksekusi script agar tidak ada output lain
+    }
+}
 ?>

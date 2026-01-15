@@ -1,93 +1,89 @@
 <?php
 // File: v1/payment/create_order.php
+// VERSI: CORE API QRIS (Murni QR Code String)
+
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
-// Handle Preflight
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit(); }
 
-include_once '../../config/koneksi.php';
-
-// Konfigurasi Midtrans
-$MIDTRANS_SERVER_KEY = getenv('MIDTRANS_SERVER_KEY');
-$IS_PRODUCTION       = getenv('MIDTRANS_IS_PRODUCTION') === 'true';
-
-if (!$MIDTRANS_SERVER_KEY) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Server Key belum dikonfigurasi."]);
-    exit;
-}
-
-$api_url = $IS_PRODUCTION 
-    ? 'https://app.midtrans.com/snap/v1/transactions' 
-    : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
-
-// Input
-$params = [];
-$raw_input = file_get_contents("php://input");
-$json_data = json_decode($raw_input, true);
-if (is_array($json_data)) $params = array_merge($params, $json_data);
-
-$profile_id = isset($params['profile_id']) ? (int)$params['profile_id'] : 0;
-$no_wa      = isset($params['no_wa']) ? preg_replace('/[^0-9]/', '', $params['no_wa']) : '';
-
-if (empty($profile_id) || empty($no_wa)) {
-    echo json_encode(["status" => false, "message" => "Data tidak lengkap."]);
-    exit;
+function loadEnvManual($path) {
+    if (!file_exists($path)) return;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        list($name, $value) = explode('=', $line, 2);
+        if (!getenv(trim($name))) putenv(trim($name) . '=' . trim($value));
+    }
 }
 
 try {
-    // FIX QUERY: Gunakan nama_tampil sebagai nama
-    $sql = "SELECT id, nama_tampil as nama, harga, router_id, admin_id 
-            FROM profiles 
-            WHERE id = ?";
-    $stmt = $conn->prepare($sql);
+    include_once '../../config/koneksi.php';
+    if (!isset($conn)) throw new Exception("Koneksi database gagal.");
+
+    if (!getenv('MIDTRANS_SERVER_KEY')) loadEnvManual(__DIR__ . '/../.env');
+    $MIDTRANS_SERVER_KEY = getenv('MIDTRANS_SERVER_KEY');
+    $IS_PRODUCTION = getenv('MIDTRANS_IS_PRODUCTION') === 'true';
+
+    // ENDPOINT CORE API (Bukan Snap!)
+    $api_url = $IS_PRODUCTION 
+        ? 'https://api.midtrans.com/v2/charge' 
+        : 'https://api.sandbox.midtrans.com/v2/charge';
+
+    $input = json_decode(file_get_contents("php://input"), true);
+    $profile_id = $input['profile_id'] ?? 0;
+    $no_wa = preg_replace('/[^0-9]/', '', $input['no_wa'] ?? '');
+
+    if (empty($profile_id) || empty($no_wa)) throw new Exception("Data tidak lengkap.");
+
+    $stmt = $conn->prepare("SELECT * FROM profiles WHERE id = ?");
     $stmt->execute([$profile_id]);
     $paket = $stmt->fetch(PDO::FETCH_ASSOC);
-
     if (!$paket) throw new Exception("Paket tidak ditemukan.");
 
-    // Buat TRX ID
-    $trx_id = "TRX-" . date("ymd") . "-" . rand(1000, 9999);
+    $trx_id = "TRX-" . date("ymdHis") . rand(100, 999);
     $gross_amount = (int)$paket['harga'];
 
-    // Insert Order
-    $sqlInsert = "INSERT INTO online_orders 
-                  (trx_id, profile_id, router_id, admin_id, no_wa, amount, status) 
-                  VALUES (?, ?, ?, ?, ?, ?, 'pending')";
-    $conn->prepare($sqlInsert)->execute([
-        $trx_id, $paket['id'], $paket['router_id'], $paket['admin_id'], $no_wa, $gross_amount
-    ]);
+    // Simpan Order (Pending)
+    $conn->prepare("INSERT INTO online_orders (trx_id, profile_id, router_id, admin_id, no_wa, amount, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')")
+         ->execute([$trx_id, $paket['id'], $paket['router_id'], $paket['admin_id'], $no_wa, $gross_amount]);
+    $order_db_id = $conn->lastInsertId();
 
-    // Midtrans Payload
-    $midtrans_params = [
-        'transaction_details' => ['order_id' => $trx_id, 'gross_amount' => $gross_amount],
-        'item_details'        => [[
-            'id' => $paket['id'], 
-            'price' => $gross_amount, 
-            'quantity' => 1, 
-            'name' => substr($paket['nama'], 0, 50)
+    // PAYLOAD CORE API (QRIS)
+    $params = [
+        'payment_type' => 'qris', // Tipe Pembayaran Langsung QRIS
+        'transaction_details' => [
+            'order_id' => $trx_id,
+            'gross_amount' => $gross_amount,
+        ],
+        'item_details' => [[
+            'id' => $paket['id'],
+            'price' => $gross_amount,
+            'quantity' => 1,
+            'name' => substr($paket['nama_tampil'], 0, 50)
         ]],
-        'customer_details'    => [
-            'first_name' => "User", 
-            'last_name' => $no_wa, 
-            'email' => "guest@voucherku.id", 
+        'customer_details' => [
+            'first_name' => "Pelanggan",
+            'last_name' => "WiFi",
             'phone' => $no_wa
         ],
-        'credit_card'         => ['secure' => true],
-        'custom_expiry'       => ['expiry_duration' => 60, 'unit' => 'minute']
+        'qris' => [
+            'acquirer' => 'gopay' // Menggunakan acquirer GoPay (Support semua QRIS)
+        ]
     ];
 
-    // Request CURL
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $api_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($midtrans_params));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
+        'Accept: application/json',
         'Authorization: Basic ' . base64_encode($MIDTRANS_SERVER_KEY . ':')
     ]);
 
@@ -95,31 +91,42 @@ try {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    $responseMidtrans = json_decode($result, true);
+    $response = json_decode($result, true);
 
-    if ($httpCode != 201 || empty($responseMidtrans['token'])) {
-        // Hapus order gagal
-        $conn->prepare("DELETE FROM online_orders WHERE trx_id = ?")->execute([$trx_id]);
-        throw new Exception("Gagal Midtrans: " . ($responseMidtrans['error_messages'][0] ?? 'Unknown Error'));
+    // Cek Hasil Core API
+    // Midtrans Core API sukses biasanya 200/201 dan ada 'qr_string' atau 'actions'
+    // Cek Hasil Core API
+    if ($httpCode >= 200 && $httpCode < 300 && (isset($response['qr_string']) || isset($response['actions']))) {
+        
+        $qr_string = $response['qr_string'] ?? '';
+        
+        if (empty($qr_string) && isset($response['actions'])) {
+            foreach ($response['actions'] as $action) {
+                if ($action['name'] == 'generate-qr-code') {
+                    $qr_string = $action['url'];
+                }
+            }
+        }
+
+        // [REVISI DISINI] Simpan QR STRING ke kolom 'snap_token' agar bisa dipanggil lagi nanti
+        $conn->prepare("UPDATE online_orders SET snap_token = ? WHERE id = ?")->execute([$qr_string, $order_db_id]);
+
+        echo json_encode([
+            "status" => true,
+            "data" => [
+                "trx_id" => $trx_id,
+                "qr_string" => $qr_string
+            ]
+        ]);
+
+    } else {
+        // Gagal
+        $conn->prepare("DELETE FROM online_orders WHERE id = ?")->execute([$order_db_id]);
+        $msg = $response['status_message'] ?? 'Gagal membuat QRIS';
+        throw new Exception("Midtrans Error: " . $msg);
     }
 
-    $snap_token = $responseMidtrans['token'];
-    
-    // Simpan Token
-    $conn->prepare("UPDATE online_orders SET snap_token = ? WHERE trx_id = ?")
-         ->execute([$snap_token, $trx_id]);
-
-    echo json_encode([
-        "status" => true,
-        "message" => "OK",
-        "data" => [
-            "trx_id" => $trx_id,
-            "snap_token" => $snap_token,
-            "redirect_url" => $responseMidtrans['redirect_url']
-        ]
-    ]);
-
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(["status" => false, "message" => $e->getMessage()]);
 }

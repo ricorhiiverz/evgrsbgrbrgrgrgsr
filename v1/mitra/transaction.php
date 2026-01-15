@@ -112,17 +112,20 @@ try {
     $stmtUpdate->execute([$harga_beli, $currentUser['id']]);
 
     // B. Insert Log Transaksi
+    $waktu_sekarang = date('Y-m-d H:i:s'); 
+
     $stmtLog = $conn->prepare("INSERT INTO transactions 
         (mitra_id, admin_id, router_id, profile_id, kode_voucher, harga_jual, status, waktu_transaksi) 
-        VALUES (?, ?, ?, ?, ?, ?, 'belum diaktifkan', NOW())");
+        VALUES (?, ?, ?, ?, ?, ?, 'belum diaktifkan', ?)"); // Ubah NOW() jadi ?
     
     $stmtLog->execute([
         $currentUser['id'],
-        $currentUser['parent_id'], // Mengambil ID Admin pemilik router (parent dari mitra)
+        $currentUser['parent_id'],
         $dataPaket['router_id'],
         $profile_id,
         $user_vc,
-        $harga_beli
+        $harga_beli,
+        $waktu_sekarang // Masukkan variabel waktu di urutan terakhir
     ]);
 
     $conn->commit();
